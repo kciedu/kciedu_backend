@@ -5,10 +5,12 @@ const jwt = require('jsonwebtoken');
 const User = require('../Models/user');
 const cloudinary = require('cloudinary').v2;
 const Courses = require('../Models/Course')
+const NewStudentHanddle = require('../controllers/Newstudent')
 const multer = require('multer');
 const auth  = require('../middleware/auth');
 const AdminAuth = require('../middleware/Admin');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const Students = require('../Models/student');
 
 const keys ="kci12345#$"
 Router.get('/', (req, res) => {
@@ -90,7 +92,7 @@ Router.get('/userlogin', AdminAuth, async (req, res) => {
   }
 });
 
-Router.get('/logout', AdminAuth, async (req, res) => {
+Router.get('/logout', async (req, res) => {
   try {
  
 
@@ -115,7 +117,6 @@ const uploadsMiddleware = multer({ storage: cloudinaryStorage });
 Router.post('/course', AdminAuth, uploadsMiddleware.fields([{ name: 'image' }, { name: 'pdf' }]), async (req, res) => {
   try {
     const { courseName, fees, duration } = req.body;
-console.log("the value of ", req.body);
     // Access the uploaded files
     const imageFile = req.files['image'][0];
     const pdfFile = req.files['pdf'][0];
@@ -145,6 +146,54 @@ Router.get('/Allcoursedata', async (req, res) => {
     res.status(500).json({ data: "Error fetching course data", success: false });
   }
 });
+
+Router.post('/studentadmission', AdminAuth, uploadsMiddleware.fields([{ name: 'Files' }]),NewStudentHanddle )
+
+Router.get('/Allstudentdata', AdminAuth, async (req, res) => {
+  console.log("API for Allstudentdata is working"); // Add this line for debugging
+  try {
+    const studentdata = await Students.find({}).exec();
+    console.log("Student Data:", studentdata); // Add this line for debugging
+    res.status(200).json({ data: studentdata, success: true });
+  } catch (error) {
+    console.error('Error fetching student data:', error);
+    res.status(500).json({ data: "Error fetching student data", success: false });
+  }
+});
+
+Router.delete('/deleteStudent/:id', AdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedStudent = await Students.findByIdAndDelete(id);
+
+    if (!deletedStudent) {
+      return res.status(404).json({ success: false, error: 'Student not found' });
+    }
+
+    res.status(200).json({ success: true, data: deletedStudent });
+  } catch (error) {
+    console.error('Error deleting student data:', error);
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
+  }
+});
+
+Router.put('/updateStudent/:id', AdminAuth, uploadsMiddleware.fields([{ name: 'Files' }]), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedStudent = await Students.findByIdAndUpdate(id, req.body, { new: true });
+
+    if (!updatedStudent) {
+      return res.status(404).json({ success: false, error: 'Student not found' });
+    }
+
+    res.status(200).json({ success: true, data: updatedStudent });
+  } catch (error) {
+    console.error('Error updating student data:', error);
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
+  }
+}
+);
+
 
 
 module.exports = Router;
