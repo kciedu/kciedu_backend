@@ -150,7 +150,6 @@ Router.get('/Allcoursedata', async (req, res) => {
 Router.post('/studentadmission', AdminAuth, uploadsMiddleware.fields([{ name: 'Files' }]),NewStudentHanddle )
 
 Router.get('/Allstudentdata', AdminAuth, async (req, res) => {
-  console.log("API for Allstudentdata is working"); // Add this line for debugging
   try {
     const studentdata = await Students.find({}).exec();
     console.log("Student Data:", studentdata); // Add this line for debugging
@@ -177,22 +176,76 @@ Router.delete('/deleteStudent/:id', AdminAuth, async (req, res) => {
   }
 });
 
-Router.put('/updateStudent/:id', AdminAuth, uploadsMiddleware.fields([{ name: 'Files' }]), async (req, res) => {
+
+// Add this route to fetch student data by ID
+Router.get('/getStudent/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const updatedStudent = await Students.findByIdAndUpdate(id, req.body, { new: true });
+    const studentData = await Students.findById(id);
 
-    if (!updatedStudent) {
+    if (!studentData) {
       return res.status(404).json({ success: false, error: 'Student not found' });
     }
+
+    res.status(200).json({ success: true, data: studentData });
+  } catch (error) {
+    console.error('Error fetching student data:', error);
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
+  }
+});
+
+
+Router.put('/updateStudent/:id', AdminAuth,  uploadsMiddleware.fields([{ name: 'Files' }]), async (req, res) =>{
+  const { id } = req.params;
+  try {
+    const {
+      firstName,
+      lastName,
+      course,
+      phoneNumber,
+      confirmPhoneNumber,
+      email,
+      dob,
+      gender,
+      occupation,
+      state,
+      city,
+      postcode,
+      address,
+    } = req.body;
+
+    const existingStudent = await Students.findById(id);
+
+    if (!existingStudent) {
+      return res.status(404).json({ success: false, error: 'Student not found' });
+    }
+    if (req.files['Files']) {
+      photoPath = req.files['Files'][0].path;
+    }
+    // Update the existing student properties
+    existingStudent.firstname = firstName;
+    existingStudent.lastname = lastName;
+    existingStudent.course = course;
+    existingStudent.Mobilenumber = phoneNumber;
+    existingStudent.confirmnumber = confirmPhoneNumber;
+    existingStudent.Email = email;
+    existingStudent.Date_of_brith = dob;
+    existingStudent.gender = gender;
+    existingStudent.Occupation = occupation;
+    existingStudent.State = state;
+    existingStudent.City = city;
+    existingStudent.Postcode = postcode;
+    existingStudent.Address = address;
+    existingStudent.photo = photoPath;
+    // Save the updated student
+    const updatedStudent = await existingStudent.save();
 
     res.status(200).json({ success: true, data: updatedStudent });
   } catch (error) {
     console.error('Error updating student data:', error);
     res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
-}
-);
+});
 
 
 
