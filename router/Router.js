@@ -149,14 +149,39 @@ Router.get('/Allcoursedata', async (req, res) => {
 
 Router.post('/studentadmission', AdminAuth, uploadsMiddleware.fields([{ name: 'Files' }]),NewStudentHanddle )
 
+// Update your route to accept page and pageSize parameters
 Router.get('/Allstudentdata', AdminAuth, async (req, res) => {
   try {
-    const studentdata = await Students.find({}).exec();
-    console.log("Student Data:", studentdata); // Add this line for debugging
-    res.status(200).json({ data: studentdata, success: true });
+    let page = parseInt(req.query.page) || 1;
+    let pageSize = parseInt(req.query.pageSize) || 5;
+
+    const skipValue = (page - 1) * pageSize;
+
+    const totalRecords = await Students.countDocuments({}); // Count all records
+
+    const studentdata = await Students.find({}).skip(skipValue).limit(pageSize).exec();
+
+    console.log("Student Data:", studentdata);
+
+    res.status(200).json({ data: studentdata, total: totalRecords, success: true });
   } catch (error) {
     console.error('Error fetching student data:', error);
     res.status(500).json({ data: "Error fetching student data", success: false });
+  }
+});
+
+Router.get('/searchStudents', AdminAuth, async (req, res) => {
+  try {
+    const searchTerm = req.query.searchTerm;
+
+    const studentdata = await Students.find({ firstname: { $regex: searchTerm, $options: 'i' } });
+
+    console.log("Search Results:", studentdata);
+
+    res.status(200).json({ data: studentdata, success: true });
+  } catch (error) {
+    console.error('Error searching students:', error);
+    res.status(500).json({ data: "Error searching students", success: false });
   }
 });
 
