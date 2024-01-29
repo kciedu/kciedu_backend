@@ -6,6 +6,7 @@ const User = require('../Models/user');
 const cloudinary = require('cloudinary').v2;
 const Courses = require('../Models/Course')
 const NewStudentHanddle = require('../controllers/Newstudent')
+const Updatestuentdata = require('../controllers/updatestudentdata')
 const multer = require('multer');
 const auth  = require('../middleware/auth');
 const AdminAuth = require('../middleware/Admin');
@@ -220,55 +221,27 @@ Router.get('/getStudent/:id', async (req, res) => {
 });
 
 
-Router.put('/updateStudent/:id', AdminAuth,  uploadsMiddleware.fields([{ name: 'Files' }]), async (req, res) =>{
-  const { id } = req.params;
+Router.put('/updateStudent/:id', AdminAuth,  uploadsMiddleware.fields([{ name: 'Files' }]),Updatestuentdata);
+
+// Assuming you have required necessary modules at the beginning of your file
+
+Router.post('/studentlogin', async (req, res) => {
+  const { studentId, username, password } = req.body;
+console.log(req.body);
   try {
-    const {
-      firstName,
-      lastName,
-      course,
-      phoneNumber,
-      confirmPhoneNumber,
-      email,
-      dob,
-      gender,
-      occupation,
-      state,
-      city,
-      postcode,
-      address,
-    } = req.body;
+    const student = await Students.findOne({ StudentID : studentId , username , password });
 
-    const existingStudent = await Students.findById(id);
-
-    if (!existingStudent) {
-      return res.status(404).json({ success: false, error: 'Student not found' });
+    if (!student) {
+      throw new Error('Student not found');
     }
-    if (req.files['Files']) {
-      photoPath = req.files['Files'][0].path;
-    }
-    // Update the existing student properties
-    existingStudent.firstname = firstName;
-    existingStudent.lastname = lastName;
-    existingStudent.course = course;
-    existingStudent.Mobilenumber = phoneNumber;
-    existingStudent.confirmnumber = confirmPhoneNumber;
-    existingStudent.Email = email;
-    existingStudent.Date_of_brith = dob;
-    existingStudent.gender = gender;
-    existingStudent.Occupation = occupation;
-    existingStudent.State = state;
-    existingStudent.City = city;
-    existingStudent.Postcode = postcode;
-    existingStudent.Address = address;
-    existingStudent.photo = photoPath;
-    // Save the updated student
-    const updatedStudent = await existingStudent.save();
 
-    res.status(200).json({ success: true, data: updatedStudent });
+   
+    res.status(200).json({
+      data: student,
+      success: true,
+    });
   } catch (error) {
-    console.error('Error updating student data:', error);
-    res.status(500).json({ success: false, error: 'Internal Server Error' });
+    res.status(401).json({ data: error.message, success: false });
   }
 });
 
