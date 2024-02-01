@@ -1,6 +1,7 @@
 const Students = require('../Models/student');
 async function NewStudentHanddle (req,res) {
     
+  console.log("this is working");
 
     try {
   

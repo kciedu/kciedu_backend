@@ -24,7 +24,7 @@ const Course = new mongoose.Schema({
     },
     PDF: {
         type: String,
-        required: true,
+       default:''
     
     },
      

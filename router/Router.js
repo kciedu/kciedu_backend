@@ -12,8 +12,17 @@ const auth  = require('../middleware/auth');
 const AdminAuth = require('../middleware/Admin');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const Students = require('../Models/student');
+const StudentPayment = require('../Models/Stuentpayment')
 
 const keys ="kci12345#$"
+const cloudinaryStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'uploads',
+    allowed_formats: ['jpg', 'png', 'pdf'],
+  },
+});
+
 Router.get('/', (req, res) => {
   res.send("Nice working correctly");
 });
@@ -49,11 +58,8 @@ Router.post('/login', async (req, res) => {
       throw new Error('Invalid password');
     }
 
-    const token = jwt.sign({ _id: user._id.toString() },keys, {
-      expiresIn: '2d',
-    });
+    const token = jwt.sign({ _id: user._id.toString() },keys);
 
-    // Save the token to the user's tokens array
     user.tokens = [{ token }];
     await user.save();
 
@@ -105,20 +111,14 @@ Router.get('/logout', async (req, res) => {
 });
 
 
-const cloudinaryStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'uploads',
-    allowed_formats: ['jpg', 'png', 'pdf'],
-  },
-});
 
 const uploadsMiddleware = multer({ storage: cloudinaryStorage });
 
 Router.post('/course', AdminAuth, uploadsMiddleware.fields([{ name: 'image' }, { name: 'pdf' }]), async (req, res) => {
+
+
   try {
     const { courseName, fees, duration } = req.body;
-    // Access the uploaded files
     const imageFile = req.files['image'][0];
     const pdfFile = req.files['pdf'][0];
 
@@ -150,7 +150,6 @@ Router.get('/Allcoursedata', async (req, res) => {
 
 Router.post('/studentadmission', AdminAuth, uploadsMiddleware.fields([{ name: 'Files' }]),NewStudentHanddle )
 
-// Update your route to accept page and pageSize parameters
 Router.get('/Allstudentdata', AdminAuth, async (req, res) => {
   try {
     let page = parseInt(req.query.page) || 1;
@@ -202,12 +201,10 @@ Router.delete('/deleteStudent/:id', AdminAuth, async (req, res) => {
   }
 });
 
-
-// Add this route to fetch student data by ID
 Router.get('/getStudent/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const studentData = await Students.findById(id);
+    const studentData = await Students.findById(id );
 
     if (!studentData) {
       return res.status(404).json({ success: false, error: 'Student not found' });
@@ -221,9 +218,29 @@ Router.get('/getStudent/:id', async (req, res) => {
 });
 
 
+Router.get('/getStudents/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+ 
+    const studentData = await Students.findOne({ StudentID: id });
+ 
+    if (!studentData) {
+      return res.status(404).json({ success: false, error: 'Student not found' });
+    }
+
+    res.status(200).json({ success: true, data: studentData });
+  } catch (error) {
+    console.error('Error fetching student data:', error);
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
+  }
+});
+
+
+
+
+
 Router.put('/updateStudent/:id', AdminAuth,  uploadsMiddleware.fields([{ name: 'Files' }]),Updatestuentdata);
 
-// Assuming you have required necessary modules at the beginning of your file
 
 Router.post('/studentlogin', async (req, res) => {
   const { studentId, username, password } = req.body;
@@ -244,6 +261,63 @@ console.log(req.body);
     res.status(401).json({ data: error.message, success: false });
   }
 });
+
+Router.post('/payments', AdminAuth, async (req, res) => {
+
+  
+  try {
+    const {
+      studentId,
+      studentName,
+      selectCourse,
+      totalAmount,
+      Receiptno,
+      paymentAmount,
+      totalBalance,
+      paymentMode,
+      note,
+    } = req.body;
+
+    console.log("rte data is ", studentId);
+
+    const newPayment = new StudentPayment({
+      studentId,
+      studentName,
+      selectCourse,
+      totalAmount,
+      receiptNo: Receiptno,
+      paymentAmount,
+      totalBalance,
+      paymentMode,
+      note,
+    });
+
+    const savedPayment = await newPayment.save();
+    res.json(savedPayment);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Retrieve all payments
+Router.get('/payments/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log("itsdfsdfsdf",id);
+    const studentData = await StudentPayment.findOne({ studentId: id });
+ console.log(studentData  ," thsdjfhsjdfsd fhb");
+    if (!studentData) {
+      return res.status(404).json({ success: false, error: 'Student not found' });
+    }
+
+    res.status(200).json({ success: true, data: studentData });
+  } catch (error) {
+    console.error('Error fetching student data:', error);
+    res.status(500).json({ success: false, error: 'Internal Server Error' });
+  }
+});
+
 
 
 
