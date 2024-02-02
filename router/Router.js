@@ -221,20 +221,24 @@ Router.get('/getStudent/:id', async (req, res) => {
 Router.get('/getStudents/:id', async (req, res) => {
   try {
     const { id } = req.params;
- 
+
     const studentData = await Students.findOne({ StudentID: id });
- 
+    const studentPaymentData = await StudentPayment.find({ studentId: id });
+
     if (!studentData) {
       return res.status(404).json({ success: false, error: 'Student not found' });
     }
 
-    res.status(200).json({ success: true, data: studentData });
+    if (!studentPaymentData) {
+      return res.status(404).json({ success: false, error: 'Student payment data not found' });
+    }
+
+    res.status(200).json({ success: true, data: studentData, paymentsData: studentPaymentData });
   } catch (error) {
     console.error('Error fetching student data:', error);
     res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 });
-
 
 
 
@@ -300,23 +304,62 @@ Router.post('/payments', AdminAuth, async (req, res) => {
   }
 });
 
-// Retrieve all payments
-Router.get('/payments/:id', async (req, res) => {
+Router.put('/payments/:id', AdminAuth, async (req, res) => {
   try {
-    const { id } = req.params;
-    console.log("itsdfsdfsdf",id);
-    const studentData = await StudentPayment.findOne({ studentId: id });
- console.log(studentData  ," thsdjfhsjdfsd fhb");
-    if (!studentData) {
-      return res.status(404).json({ success: false, error: 'Student not found' });
+    const paymentId = req.params.id;
+    const {
+      studentId,
+      studentName,
+      selectCourse,
+      totalAmount,
+      Receiptno,
+      paymentAmount,
+      totalBalance,
+      paymentMode,
+      note,
+    } = req.body;
+
+    const updatedPayment = await StudentPayment.findByIdAndUpdate(
+      paymentId,
+      {
+        $set: {
+          studentId,
+          studentName,
+          selectCourse,
+          totalAmount,
+          receiptNo: Receiptno,
+          paymentAmount,
+          totalBalance,
+          paymentMode,
+          note,
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedPayment) {
+      return res.status(404).json({ error: 'Payment not found' });
     }
 
-    res.status(200).json({ success: true, data: studentData });
+    res.json(updatedPayment);
   } catch (error) {
-    console.error('Error fetching student data:', error);
-    res.status(500).json({ success: false, error: 'Internal Server Error' });
+    console.error('Error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
+
+
+
+Router.get('/allpaymentreceipt', AdminAuth, async (req, res) => {
+  try {
+    const payemntrecipt = await StudentPayment.find({}).exec();
+    res.status(200).json({ data: payemntrecipt, success: true });
+  } catch (error) {
+    console.error('Error fetching course data:', error);
+    res.status(500).json({ data: "Error fetching course data", success: false });
+  }
+});
+
 
 
 
