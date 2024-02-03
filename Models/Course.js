@@ -16,7 +16,13 @@ const Course = new mongoose.Schema({
           required: true,
       
       },
-       
+      Descriptions:
+      {
+        type: String,
+        default:''
+    
+      }
+       ,
       Image: {
         type: String,
         required: true,
